@@ -10,6 +10,8 @@ To address this issue, a Merkle Root is generated from the CSV file. The Merkle 
 
 ## How to generate a Merkle Root from a file of CSV addresses?
 
-1. Drop a csv file with only addresses into the dropzone.
+1. Select a csv file that contains only addresses.
+2. If invalid addresses are present you will be prompted to fix the addresses and retry merkle generation.
+3. Once valid, you will be able to copy the merkle root and the array of addresses.
 
 Once the Merkle Root is generated, it can be included in the smart contract that governs the NFT sale or auction, along with the necessary code to verify user participation.
