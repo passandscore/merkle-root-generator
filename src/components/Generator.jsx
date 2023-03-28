@@ -81,7 +81,7 @@ export default function Generate() {
     createRootHashFromAddressList(lowercaseFileContent);
   };
 
-  const copyToClipboard = () => {
+  const copyRootToClipboard = () => {
     copy(JSON.stringify(generatedMerkleRoot));
     toast.success("Copied to clipboard");
   };
@@ -93,10 +93,13 @@ export default function Generate() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl border-b py-4 text-[40px] font-light sm:px-6 lg:px-8 text-[#C8D1D9]">
+      <div className="mt-10 mx-auto max-w-7xl  text-[40px] font-black  lg:px-8 text-[#C8D1D9]">
         Merkle Root Generator
       </div>
-      <p className="mx-auto mb-5 max-w-7xl border-b py-4 text-xl font-light sm:px-6 lg:px-8 text-[#C8D1D9] ">
+      <div className="mx-auto max-w-7xl border-b pb-4 text-[20px] font-black sm:px-6 lg:px-8 text-[#C8D1D9]">
+        NFT Allowlists
+      </div>
+      <p className="mx-auto mb-5 max-w-7xl border-b py-4 text-xl font-normal sm:px-6 lg:px-8 text-[#C8D1D9] bg-black bg-opacity-60">
         The addresses need to be upload as a CSV file. The CSV file should only
         contain the addresses and nothing else. The merkle root will be
         generated automatically. With the provided merkle root you can submit it
@@ -109,67 +112,52 @@ export default function Generate() {
         <div className="mx-auto max-w-4xl">
           {/* inputs */}
           {invalidAddresses.length > 0 ? (
-            <div className="md:w-100 mt-20 rounded-lg  p-4 shadow-lg">
-              <div className="m-1">
-                <button className="mt-4 inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+            <div className="md:w-100 mt-20">
+              <div className="m-1 flex justify-center">
+                <button className="mt-4 inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-lg font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   <CSVLink {...csvReport}> Download Invalid Addresses</CSVLink>
                 </button>
               </div>
-              <p className="mt-4 text-sm text-gray-500">
-                Please fix the invalid addresses and{" "}
-                <span
-                  className="text-indigo-600 hover:text-indigo-500 cursor-pointer"
-                  onClick={() => {
-                    window.location.reload();
-                  }}
-                >
-                  try again.
-                </span>
+              <p className="mt-4 text-xl text-white text-center">
+                Please fix the invalid addresses and try again.
               </p>
             </div>
           ) : (
-            <div className="md:w-100 mt-20">
-              <div className="m-1">
-                <div class="flex justify-center">
-                  <div class="mb-3 w-96">
-                    <input
-                      class="relative m-0 block w-full min-w-0 flex-auto rounded border border-solid border-neutral-300 bg-clip-padding py-[0.32rem] px-3 text-base font-normal text-white transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:overflow-hidden file:rounded-none file:border-0 file:border-solid file:border-inherit file:bg-indigo-700 file:px-3 file:py-[0.32rem] file:text-white file:transition file:duration-150 file:ease-in-out file:[margin-inline-end:0.75rem] file:[border-inline-end-width:1px] hover:file:bg-indigo-500 focus:border-primary focus:text-neutral-700 focus:shadow-[0_0_0_1px] focus:shadow-primary focus:outline-none"
-                      type="file"
-                      id="formFile"
-                      onChange={(e) => handleAddresses(e)}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div class="flex justify-center mt-10">
+              <input
+                class="relative m-0 block w-full min-w-0 flex-auto rounded border border-solid border-neutral-300 bg-clip-padding py-[0.32rem] px-3 text-lg font-normal text-white transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:overflow-hidden file:rounded-none file:border-0 file:border-solid file:border-inherit file:bg-indigo-700 file:px-3 file:py-[0.32rem] file:text-white file:transition file:duration-150 file:ease-in-out file:[margin-inline-end:0.75rem] file:[border-inline-end-width:1px] hover:file:bg-indigo-500 focus:border-primary focus:text-neutral-700 focus:shadow-[0_0_0_1px] focus:shadow-primary focus:outline-none"
+                type="file"
+                id="formFile"
+                onChange={(e) => handleAddresses(e)}
+              />
             </div>
           )}
 
           {/* outputs */}
-          {generatedMerkleRoot && (
+          {generatedMerkleRoot && invalidAddresses.length === 0 && (
             <>
-              <div className="md:w-100 mt-10 rounded-lg bg-gray-200 p-4 shadow-lg">
-                <div className="mx-auto max-w-screen-lg">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-200">
-                        <th className="p-3 text-left">{generatedMerkleRoot}</th>
-                        <th className="pl-3 text-center cursor-pointer hover:bg-gray-300 hover:rounded-md">
-                          {<IconCopy onClick={copyToClipboard} />}
-                        </th>
-                      </tr>
-                    </thead>
-                  </table>
-                </div>
+              <div className="mt-10 rounded-lg bg-gray-200 p-4 shadow-lg text-md w-auto text-center">
+                {generatedMerkleRoot}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-6">
                 <button
-                  className="mt-4 inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 mx-4 py-2 text-lg font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={copyRootToClipboard}
+                >
+                  <IconCopy />
+                  <p className="pl-2">Root</p>
+                </button>
+                <button
+                  className="mt-4 inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-lg font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={copyAddressesToClipboard}
                 >
-                  Copy Address Array
+                  <IconCopy />
+                  <p className="pl-2">Address Array</p>
                 </button>
               </div>
+
+              <p className="mt-4 text-xl text-white text-right">{`${whitelistedAddresses.length} total addresses`}</p>
             </>
           )}
         </div>
