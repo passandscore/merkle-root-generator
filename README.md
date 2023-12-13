@@ -1,7 +1,7 @@
 # Merkle Root Generator for NFT Allowlists
 
 <p align="center">
-  <a ><img src="public/merkle-root-generator.png" alt="summary"></a></p>
+  <a ><img src="public/merkle-root-screenshot.png" alt="summary"></a></p>
 </p>
 
 A Merkle Root is a hash value that is used to summarize a set of data, such as a list of addresses in an NFT (Non-Fungible Token) Allowlist. An Allowlist is a list of addresses that are allowed to participate in a specific NFT sale or auction. Merkle Roots are often used in conjunction with Allowlists to ensure the integrity and security of the NFT sale or auction process.
