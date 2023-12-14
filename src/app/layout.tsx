@@ -1,11 +1,9 @@
-import { DM_Sans, Fira_Code, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import ThemeProvider from "./theme-provider";
 import Navbar from "components/navbar/index";
 
-export const inter = Inter({ subsets: ["latin"] });
-export const dmSans = DM_Sans({ subsets: ["latin"] });
-export const firaCode = Fira_Code({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,

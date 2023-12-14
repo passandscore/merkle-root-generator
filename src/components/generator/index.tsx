@@ -6,6 +6,8 @@ import { CSVLink } from "react-csv";
 import { Container, useToast } from "@chakra-ui/react";
 import { IconCopy } from "@tabler/icons-react";
 import { Input, Button, Flex, Text, Box } from "@chakra-ui/react";
+import { useWindowSize } from "usehooks-ts";
+import { mobileBreakpoint, invalidAddressesOutputFilename } from "config";
 
 export default function Generate() {
   const [generatedMerkleRoot, setGeneratedMerkleRoot] = useState("");
@@ -16,12 +18,14 @@ export default function Generate() {
 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { width } = useWindowSize();
 
   const data = invalidAddresses.map((address) => ({ address }));
+  const isMobile = width < mobileBreakpoint;
 
   const csvReport = {
     data,
-    filename: "invalid-addresses.csv",
+    filename: invalidAddressesOutputFilename,
   };
 
   const generateMerkleProof = useCallback(async (addresses: string[]) => {
@@ -87,6 +91,7 @@ export default function Generate() {
         status: "error",
         duration: 5000,
         isClosable: true,
+        position: "top",
       });
       return;
     }
@@ -101,6 +106,7 @@ export default function Generate() {
       status: "success",
       duration: 3000,
       isClosable: true,
+      position: "top",
     });
   };
 
@@ -111,70 +117,14 @@ export default function Generate() {
       status: "success",
       duration: 3000,
       isClosable: true,
+      position: "top",
     });
   };
 
   return (
-    <Box mx={10}>
-      <Flex
-        mt={10}
-        mx="auto"
-        maxW="7xl"
-        fontSize="3xl"
-        fontWeight="bold"
-        color="white"
-        justify="space-between"
-        align="center"
-      >
-        <Text>Merkle Root Generator</Text>
-        <Flex align="center">
-          {/* Star Repo Button */}
-          <Button
-            size="sm"
-            variant={"outline"}
-            onClick={() => {
-              window.open(
-                "https://github.com/passandscore/merkle-root-generator",
-                "_blank"
-              );
-            }}
-            fontSize="xs"
-            ml={2}
-          >
-            Star Repository
-          </Button>
-        </Flex>
-      </Flex>
-
-      <Flex
-        mx="auto"
-        maxW="7xl"
-        borderBottom="1px"
-        pb={4}
-        fontSize="lg"
-        justify="space-between"
-      >
-        <Text color="#4299E1">NFT Whitelists</Text>
-      </Flex>
-
-      <Text mx="auto" maxW="7xl" pt={4}>
-        - The addresses need to be uploaded as a CSV file.
-      </Text>
-      <Text mx="auto" maxW="7xl">
-        - The CSV file should only contain the addresses. No empty rows or
-        columns❗️
-      </Text>
-      <Text mx="auto" maxW="7xl" pb={4}>
-        - The Merkle root will be generated automatically.
-      </Text>
-
-      <Text mx="auto" mb={5} maxW="7xl" borderBottom="1px" pt={2} pb={3}>
-        With the provided merkle root, you can submit it to your smart contract.
-        Only valid whitelisted addresses will be able to mint the NFT.
-      </Text>
-
+    <>
       <Box>
-        <Box mx="auto">
+        <Box mx="auto" mb={10}>
           {/* inputs */}
           {invalidAddresses.length > 0 ? (
             <Box w="full" mt={20}>
@@ -238,13 +188,15 @@ export default function Generate() {
                   >
                     RESET
                   </Text>
-                  <Button onClick={copyRootToClipboard} mr={2}>
-                    <IconCopy size={16} />
-                    <Text pl={2}>Merkle Root</Text>
+
+                  <Button onClick={copyRootToClipboard} mr={2} size="sm">
+                    {!isMobile && <IconCopy size={16} />}
+                    <Text pl={!isMobile ? 2 : 0}>Merkle Root</Text>
                   </Button>
-                  <Button onClick={copyAddressesToClipboard}>
-                    <IconCopy size={16} />
-                    <Text pl={2}>Address Array</Text>
+
+                  <Button onClick={copyAddressesToClipboard} size="sm">
+                    {!isMobile && <IconCopy size={16} />}
+                    <Text pl={!isMobile ? 2 : 0}>Address Array</Text>
                   </Button>
                 </Flex>
 
@@ -257,6 +209,6 @@ export default function Generate() {
           )}
         </Box>
       </Box>
-    </Box>
+    </>
   );
 }
