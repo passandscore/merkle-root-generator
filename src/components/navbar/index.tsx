@@ -122,7 +122,7 @@ const Navbar: FC = () => {
         >
           <Box display="flex" alignItems="center">
             <Link
-              href="/"
+              href="https://www.jasonschwarz.xyz/"
               display="flex"
               _focus={{ outline: "none" }}
               aria-label="Logo"

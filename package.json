@@ -1,5 +1,5 @@
 {
-  "name": "merkle",
+  "name": "merkle-root-generator",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -25,16 +25,12 @@
     "react-router-dom": "^6.20.1",
     "react-scripts": "5.0.1",
     "react-toastify": "^9.1.2",
-    "typescript": "5.2",
-    "web-vitals": "^2.1.4"
+    "typescript": "5.2"
   },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint"
-  },
-  "eslintConfig": {
-    "extends": "next/core-web-vitals"
   },
   "browserslist": {
     "production": [
@@ -48,7 +44,5 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "tailwindcss": "^3.2.7"
-  }
+  "devDependencies": {}
 }

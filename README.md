@@ -1,5 +1,3 @@
-# Merkle Root Generator for NFT Allowlists
-
 <p align="center">
   <a ><img src="public/merkle-root-screenshot.png" alt="summary"></a></p>
 </p>

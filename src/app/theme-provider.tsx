@@ -2,11 +2,6 @@
 
 import { CacheProvider } from "@chakra-ui/next-js";
 import { Box, ChakraProvider, extendTheme } from "@chakra-ui/react";
-import { Global } from "@emotion/react";
-
-import generalStyles from "styles/general";
-import prismStyles from "styles/prism";
-import typographyStyles from "styles/typography";
 
 export const customTheme = extendTheme({
   config: {
@@ -32,10 +27,6 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           display="flex"
           flexDir="column"
         >
-          <Global styles={typographyStyles} />
-          <Global styles={generalStyles} />
-          <Global styles={prismStyles} />
-
           {children}
         </Box>
       </ChakraProvider>

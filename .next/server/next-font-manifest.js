@@ -1,1 +1,0 @@
-self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/jasonschwarz/merkle-root-generator/src/app/layout\":[\"static/media/3e3cf2ee9aa3f174-s.p.woff2\",\"static/media/122c360d7fe6d395-s.p.woff2\",\"static/media/c9a5bc6a7c948fb0-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
