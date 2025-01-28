@@ -327,20 +327,28 @@ export default function Generate() {
               <Text>{isAddressesCopied ? "Addresses Copied!" : "Copy Addresses"}</Text>
             </Button>
           </Flex>
-          <Flex justify="center" mt={6}>
+          <Flex 
+            justify="space-between" 
+            align="center" 
+            mt={8} 
+            borderTop="1px" 
+            borderColor="gray.700" 
+            pt={4}
+          >
+            <Text color="gray.400">
+              {`${whitelistedAddresses.length} addresses loaded`}
+            </Text>
             <Button
               size="sm"
               variant="ghost"
-              colorScheme="red"
-              onClick={resetAll}
+              color="gray.400"
               leftIcon={<IconUpload size={16} />}
+              onClick={resetAll}
+              _hover={{ color: "red.400" }}
             >
               Upload Different CSV
             </Button>
           </Flex>
-          <Text align="center" mt={4} color="gray.400">
-            {`${whitelistedAddresses.length} addresses loaded`}
-          </Text>
 
           <Modal 
             isOpen={isModalOpen} 
