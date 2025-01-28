@@ -3,7 +3,7 @@ import Papa from "papaparse";
 import { MerkleTree } from "merkletreejs";
 import { ethers } from "ethers";
 import { CSVLink } from "react-csv";
-import { Container, useToast, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import { Container, useToast, Tabs, TabList, TabPanels, Tab, TabPanel, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton } from "@chakra-ui/react";
 import { IconCopy, IconUpload, IconSitemap, IconPlant2, IconList, IconArrowLeft } from "@tabler/icons-react";
 import { Input, Button, Flex, Text, Box } from "@chakra-ui/react";
 import { useWindowSize } from "usehooks-ts";
@@ -20,6 +20,7 @@ export default function Generate() {
   const [isProofCopied, setIsProofCopied] = useState(false);
   const [isRootCopied, setIsRootCopied] = useState(false);
   const [isAddressesCopied, setIsAddressesCopied] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,9 +110,9 @@ export default function Generate() {
   const handleProofGeneration = () => {
     if (!proofAddress || !merkleTree) {
       toast({
-        title: "Please provide an address and upload a valid CSV first",
+        title: "Please provide an address",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
@@ -123,7 +124,7 @@ export default function Generate() {
       toast({
         title: "Address not found in merkle tree",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
@@ -133,6 +134,9 @@ export default function Generate() {
     navigator.clipboard.writeText(JSON.stringify(proof));
     setGeneratedMerkleProof(JSON.stringify(proof));
     setIsProofCopied(true);
+    setProofAddress("");
+    setIsModalOpen(false);
+    
     toast({
       title: "Proof copied!",
       description: "Check your clipboard for the Merkle proof",
@@ -141,6 +145,7 @@ export default function Generate() {
       isClosable: true,
       position: "top",
     });
+    
     setTimeout(() => {
       setIsProofCopied(false);
     }, 2000);
@@ -280,8 +285,8 @@ export default function Generate() {
             <Button
               size="lg"
               variant="outline"
-              colorScheme="blue"
-              onClick={() => setSelectedAction('proof')}
+              colorScheme={isProofCopied ? "green" : "blue"}
+              onClick={() => setIsModalOpen(true)}
               height="80px"
               width="200px"
               display="flex"
@@ -290,7 +295,7 @@ export default function Generate() {
               _hover={{ bg: "blue.900" }}
             >
               <IconSitemap size={32} stroke={1.5} />
-              <Text>Generate Proof</Text>
+              <Text>{isProofCopied ? "Proof Copied!" : "Generate Proof"}</Text>
             </Button>
             <Button
               size="lg"
@@ -336,44 +341,50 @@ export default function Generate() {
           <Text align="center" mt={4} color="gray.400">
             {`${whitelistedAddresses.length} addresses loaded`}
           </Text>
+
+          <Modal 
+            isOpen={isModalOpen} 
+            onClose={() => {
+              setIsModalOpen(false);
+              setProofAddress("");
+            }}
+            size="xl"
+            isCentered
+          >
+            <ModalOverlay />
+            <ModalContent bg="gray.800">
+              <ModalHeader>Generate Merkle Proof</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody pb={6}>
+                <Input
+                  placeholder="Enter Ethereum address (0x...)"
+                  value={proofAddress}
+                  onChange={(e) => setProofAddress(e.target.value)}
+                  size="md"
+                  mb={4}
+                />
+                <Button 
+                  onClick={handleProofGeneration}
+                  isDisabled={!proofAddress}
+                  w="full"
+                  colorScheme="blue"
+                  size="md"
+                >
+                  Generate Proof
+                </Button>
+              </ModalBody>
+            </ModalContent>
+          </Modal>
         </Box>
       );
     }
 
     return (
-      <Box mt={20}>
-        <Box>
-          <Flex justify="end" mb={6}>
-            <Button
-              onClick={() => setSelectedAction(null)}
-              size="md"
-              variant="outline"
-              leftIcon={<IconArrowLeft size={16} />}
-              color="gray.400"
-              borderColor="gray.700"
-              _hover={{ bg: "gray.800" }}
-            >
-              Back to Options
-            </Button>
-          </Flex>
-          <Input
-            placeholder="Enter Ethereum address (0x...)"
-            value={proofAddress}
-            onChange={(e) => setProofAddress(e.target.value)}
-            size="lg"
-          />
-          <Flex gap={2} mt={4}>
-           
-            <Button 
-              onClick={handleProofGeneration}
-              isDisabled={!proofAddress}
-              w="full"
-              colorScheme={isProofCopied ? "green" : "blue"}
-              size="lg"
-            >
-              {isProofCopied ? "Proof Copied To Clipboard!" : "Generate Proof"}
-            </Button>
-          </Flex>
+      <Box>
+        <Box mx="auto" mb={10}>
+          <Container maxW="7xl" p={0}>
+            {renderContent()}
+          </Container>
         </Box>
       </Box>
     );
