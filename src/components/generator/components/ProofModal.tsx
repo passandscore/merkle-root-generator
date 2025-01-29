@@ -7,6 +7,8 @@ import {
   ModalCloseButton,
   Input,
   Button,
+  Checkbox,
+  VStack,
 } from "@chakra-ui/react";
 
 interface ProofModalProps {
@@ -15,6 +17,8 @@ interface ProofModalProps {
   proofAddress: string;
   onAddressChange: (value: string) => void;
   onGenerate: () => void;
+  withQuotes?: boolean;
+  onQuotesChange?: (value: boolean) => void;
 }
 
 export const ProofModal = ({
@@ -23,6 +27,8 @@ export const ProofModal = ({
   proofAddress,
   onAddressChange,
   onGenerate,
+  withQuotes = false,
+  onQuotesChange,
 }: ProofModalProps) => {
   return (
     <Modal 
@@ -36,22 +42,30 @@ export const ProofModal = ({
         <ModalHeader>Generate Merkle Proof</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          <Input
-            placeholder="Enter Ethereum address (0x...)"
-            value={proofAddress}
-            onChange={(e) => onAddressChange(e.target.value)}
-            size="md"
-            mb={4}
-          />
-          <Button 
-            onClick={onGenerate}
-            isDisabled={!proofAddress}
-            w="full"
-            colorScheme="blue"
-            size="md"
-          >
-            Generate Proof
-          </Button>
+          <VStack spacing={4} align="stretch">
+            <Input
+              placeholder="Enter Ethereum address (0x...)"
+              value={proofAddress}
+              onChange={(e) => onAddressChange(e.target.value)}
+              size="md"
+            />
+            <Checkbox
+              isChecked={withQuotes}
+              onChange={(e) => onQuotesChange?.(e.target.checked)}
+              colorScheme="blue"
+            >
+              Add quotes to array elements
+            </Checkbox>
+            <Button 
+              onClick={onGenerate}
+              isDisabled={!proofAddress}
+              w="full"
+              colorScheme="blue"
+              size="md"
+            >
+              Generate Proof
+            </Button>
+          </VStack>
         </ModalBody>
       </ModalContent>
     </Modal>

@@ -8,6 +8,9 @@ import { IconCopy, IconUpload, IconSitemap, IconPlant2, IconList, IconArrowLeft 
 import { Input, Button, Flex, Text, Box } from "@chakra-ui/react";
 import { useWindowSize } from "usehooks-ts";
 import { mobileBreakpoint, invalidAddressesOutputFilename } from "config";
+import { ProofModal } from "./components/ProofModal";
+import { UploadCSV } from "./components/UploadCSV";
+import { ExportInvalidButton } from "./components/ExportInvalidButton";
 
 export default function Generate() {
   const [generatedMerkleRoot, setGeneratedMerkleRoot] = useState("");
@@ -21,6 +24,7 @@ export default function Generate() {
   const [isRootCopied, setIsRootCopied] = useState(false);
   const [isAddressesCopied, setIsAddressesCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [withQuotes, setWithQuotes] = useState(false);
 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,27 +88,43 @@ export default function Generate() {
   };
 
   const handleAddresses = async (e: any) => {
-    const file = e.target.files && e.target.files[0];
-    const addresses = (await parsedFile(file)) as string[];
+    try {
+      const file = e.target.files && e.target.files[0];
+      const addresses = (await parsedFile(file)) as string[];
 
-    const invalidAddresses = addresses.filter(
-      (address) => !ethers.utils.isAddress(address)
-    ) as string[];
+      // Check for invalid addresses
+      const invalidAddressesList = addresses.filter(
+        (address) => !ethers.utils.isAddress(address)
+      );
 
-    if (invalidAddresses.length > 0) {
-      setInvalidAddresses(invalidAddresses);
+      // Set invalid addresses if any found
+      if (invalidAddressesList.length > 0) {
+        setInvalidAddresses(invalidAddressesList);
+        toast({
+          title: `${invalidAddressesList.length} invalid addresses found`,
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+
+      // Filter out invalid addresses
+      const validAddresses = addresses.filter(address => ethers.utils.isAddress(address));
+      setWhitelistedAddresses(validAddresses);
+      createRootHashFromAddressList(validAddresses);
+      
+    } catch (error) {
+      console.error('File processing error:', error);
       toast({
-        title: "Invalid addresses found in CSV file",
+        title: "Error processing file",
+        description: "Please check your CSV file format and try again",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
-      return;
     }
-    
-    setWhitelistedAddresses(addresses);
-    createRootHashFromAddressList(addresses);
   };
 
   const handleProofGeneration = () => {
@@ -119,10 +139,12 @@ export default function Generate() {
       return;
     }
 
-    const proof = generateProof(proofAddress);
-    if (!proof) {
+    // Check if address exists in whitelist
+    const normalizedAddress = proofAddress.toLowerCase();
+    if (!whitelistedAddresses.includes(normalizedAddress)) {
       toast({
-        title: "Address not found in merkle tree",
+        title: "Address not found",
+        description: "The provided address is not in the allowlist",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -131,8 +153,24 @@ export default function Generate() {
       return;
     }
 
-    navigator.clipboard.writeText(JSON.stringify(proof));
-    setGeneratedMerkleProof(JSON.stringify(proof));
+    const proof = generateProof(proofAddress);
+    if (!proof) {
+      toast({
+        title: "Error generating proof",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      return;
+    }
+
+    const formattedProof = withQuotes ? 
+      JSON.stringify(proof) : 
+      JSON.stringify(proof).replace(/"/g, '');
+
+    navigator.clipboard.writeText(formattedProof);
+    setGeneratedMerkleProof(formattedProof);
     setIsProofCopied(true);
     setProofAddress("");
     setIsModalOpen(false);
@@ -149,28 +187,6 @@ export default function Generate() {
     setTimeout(() => {
       setIsProofCopied(false);
     }, 2000);
-  };
-
-  const copyRootToClipboard = () => {
-    navigator.clipboard.writeText(JSON.stringify(generatedMerkleRoot));
-    toast({
-      title: "Copied to clipboard",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "top",
-    });
-  };
-
-  const copyProofToClipboard = () => {
-    navigator.clipboard.writeText(generatedMerkleProof);
-    toast({
-      title: "Proof copied to clipboard",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "top",
-    });
   };
 
   const resetAll = () => {
@@ -214,38 +230,9 @@ export default function Generate() {
 
     if (!merkleTree) {
       return (
-        <Box
-          position="relative"
-          border="1px dashed"
-          borderColor="gray.600"
-          borderRadius="md"
-          p={8}
-          cursor="pointer"
-          _hover={{ bg: "gray.800" }}
-        >
-          <Input
-            ref={inputRef}
-            type="file"
-            accept=".csv"
-            height="100%"
-            width="100%"
-            position="absolute"
-            top="0"
-            left="0"
-            opacity="0"
-            cursor="pointer"
-            aria-hidden="true"
-            onChange={(e) => {
-              handleAddresses(e);
-              e.target.value = '';
-            }}
-          />
-          <Flex align="center" justify="center" direction="column">
-            <IconUpload size={32} stroke={1.5} />
-            <Text mt={4} fontSize="lg">Upload CSV</Text>
-            <Text mt={2} fontSize="sm" color="gray.400">Upload your allowlist addresses</Text>
-          </Flex>
-        </Box>
+        <UploadCSV 
+          onUpload={handleAddresses}
+        />
       );
     }
 
@@ -326,6 +313,20 @@ export default function Generate() {
               <IconList size={32} stroke={1.5} />
               <Text>{isAddressesCopied ? "Addresses Copied!" : "Copy Addresses"}</Text>
             </Button>
+            {invalidAddresses.length > 0 && (
+              <ExportInvalidButton 
+                onClick={() => {
+                  const csvContent = invalidAddresses.join('\n');
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'invalid-addresses.csv';
+                  a.click();
+                }}
+                invalidCount={invalidAddresses.length}
+              />
+            )}
           </Flex>
           <Flex 
             justify="space-between" 
@@ -350,39 +351,18 @@ export default function Generate() {
             </Button>
           </Flex>
 
-          <Modal 
+          <ProofModal 
             isOpen={isModalOpen} 
             onClose={() => {
               setIsModalOpen(false);
               setProofAddress("");
             }}
-            size="xl"
-            isCentered
-          >
-            <ModalOverlay />
-            <ModalContent bg="gray.800">
-              <ModalHeader>Generate Merkle Proof</ModalHeader>
-              <ModalCloseButton />
-              <ModalBody pb={6}>
-                <Input
-                  placeholder="Enter Ethereum address (0x...)"
-                  value={proofAddress}
-                  onChange={(e) => setProofAddress(e.target.value)}
-                  size="md"
-                  mb={4}
-                />
-                <Button 
-                  onClick={handleProofGeneration}
-                  isDisabled={!proofAddress}
-                  w="full"
-                  colorScheme="blue"
-                  size="md"
-                >
-                  Generate Proof
-                </Button>
-              </ModalBody>
-            </ModalContent>
-          </Modal>
+            proofAddress={proofAddress}
+            onAddressChange={(value) => setProofAddress(value)}
+            onGenerate={handleProofGeneration}
+            withQuotes={withQuotes}
+            onQuotesChange={setWithQuotes}
+          />
         </Box>
       );
     }
