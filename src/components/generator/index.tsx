@@ -25,6 +25,8 @@ export default function Generate() {
   const [isAddressesCopied, setIsAddressesCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [withQuotes, setWithQuotes] = useState(false);
+  const [numberOfDuplicates, setNumberOfDuplicates] = useState(0);
+  const [initialAddresses, setInitialAddresses] = useState(0);
 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,14 +62,18 @@ export default function Generate() {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         complete: (results) => {
-          const cleanedAddresses = Array.from(new Set(
+          setInitialAddresses(results.data.length);
+          const addressesWithoutDuplicates = Array.from(new Set(
             results.data
               .flat(Infinity)
               .map((item: unknown) => (item || "").toString().trim().toLowerCase())
               .filter(item => item.length > 0)
           ));
+
+          const numberOfDuplicates =   results.data.length - addressesWithoutDuplicates.length;
+          setNumberOfDuplicates(numberOfDuplicates);
           
-          resolve(cleanedAddresses);
+          resolve(addressesWithoutDuplicates);
         },
         error: (error) => {
           reject(error);
@@ -92,8 +98,13 @@ export default function Generate() {
       const file = e.target.files && e.target.files[0];
       const addresses = (await parsedFile(file)) as string[];
 
+      // Remove duplicates
+      const addressesWithoutDuplicates = Array.from(new Set(addresses));
+      
+
+
       // Check for invalid addresses
-      const invalidAddressesList = addresses.filter(
+      const invalidAddressesList = addressesWithoutDuplicates.filter(
         (address) => !ethers.utils.isAddress(address)
       );
 
@@ -110,7 +121,7 @@ export default function Generate() {
       }
 
       // Filter out invalid addresses
-      const validAddresses = addresses.filter(address => ethers.utils.isAddress(address));
+      const validAddresses = addressesWithoutDuplicates.filter(address => ethers.utils.isAddress(address));
       setWhitelistedAddresses(validAddresses);
       createRootHashFromAddressList(validAddresses);
       
@@ -336,9 +347,17 @@ export default function Generate() {
             borderColor="gray.700" 
             pt={4}
           >
-            <Text color="gray.400">
-              {`${whitelistedAddresses.length} addresses loaded`}
-            </Text>
+            <Flex direction="column">
+              <Text color="gray.400">
+                {`${initialAddresses} addresses loaded`}
+              </Text>
+              <Text color="gray.400">
+                {`${numberOfDuplicates} duplicates found`}
+              </Text>
+              <Text color="gray.400">
+                {`${initialAddresses - numberOfDuplicates} unique addresses`}
+              </Text>
+            </Flex>
             <Button
               size="sm"
               variant="ghost"
