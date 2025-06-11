@@ -14,7 +14,7 @@ const Instructions = () => {
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4} color="gray.400">
-            This tool helps create and verify allowlists for NFT smart contracts using Merkle trees.
+            This tool helps create and verify allowlists for NFT smart contracts and airdrop distributions using Merkle trees.
           </AccordionPanel>
         </AccordionItem>
 
@@ -56,13 +56,39 @@ const Instructions = () => {
           <AccordionButton px={0} borderBottom="1px" borderColor="gray.700">
             <Box flex="1" textAlign="left">
               <Text fontSize="lg" color="gray.200">
+                What types of allowlists are supported?
+              </Text>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+          <AccordionPanel pb={4} color="gray.400">
+            <Text mb={4}>This tool supports two types of allowlists:</Text>
+            <Text pl={4} mb={2}>
+              1. <strong>NFT Whitelist:</strong> Simple list of Ethereum addresses for NFT minting
+            </Text>
+            <Text pl={4} mb={2}>
+              2. <strong>Airdrop Allowlist:</strong> List of addresses with associated token amounts in wei
+            </Text>
+          </AccordionPanel>
+        </AccordionItem>
+
+        <AccordionItem border="none">
+          <AccordionButton px={0} borderBottom="1px" borderColor="gray.700">
+            <Box flex="1" textAlign="left">
+              <Text fontSize="lg" color="gray.200">
                 How do I use it?
               </Text>
             </Box>
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4} color="gray.400">
-            Simply upload your CSV file containing Ethereum addresses, and choose which operation you need.
+            <Text mb={4}>Choose your allowlist type and upload the appropriate CSV file:</Text>
+            <Text pl={4} mb={2}>
+              <strong>NFT Whitelist:</strong> Upload a CSV with Ethereum addresses (one per line)
+            </Text>
+            <Text pl={4} mb={2}>
+              <strong>Airdrop Allowlist:</strong> Upload a CSV with two columns: address, value (in wei)
+            </Text>
           </AccordionPanel>
         </AccordionItem>
 
@@ -86,6 +112,9 @@ const Instructions = () => {
             <Text pl={8} mb={2}>• Separated from valid addresses</Text>
             <Text pl={8} mb={2}>• Displayed in a list for review</Text>
             <Text pl={8} mb={2}>• Can be exported to a CSV file for easy fixing</Text>
+            <Text pl={4} mb={2}>
+              3. Value Validation (Airdrops only): For airdrop allowlists, values are validated to ensure they are positive numbers in wei.
+            </Text>
             <Text mt={4}>
               The Merkle tree is only generated using valid, unique addresses. You'll need to fix any invalid addresses before proceeding with the Merkle root generation.
             </Text>

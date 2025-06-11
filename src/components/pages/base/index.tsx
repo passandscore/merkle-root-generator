@@ -3,7 +3,6 @@
 import { Box, Center } from "@chakra-ui/react";
 
 import Header from "src/components/header";
-import Instructions from "src/components/instructions";
 import MerkleGenerator from "src/components/generator";
 
 const Page = () => {
@@ -16,7 +15,6 @@ const Page = () => {
         w="100%"
       >
         <Header />
-        <Instructions />
         <MerkleGenerator />
       </Box>
     </Center>

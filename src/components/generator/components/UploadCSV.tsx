@@ -2,11 +2,14 @@ import { Box, Input, Flex, Text } from "@chakra-ui/react";
 import { IconUpload } from "@tabler/icons-react";
 import { useRef } from "react";
 
+type AllowlistMode = 'nft' | 'airdrop';
+
 interface UploadCSVProps {
   onUpload: (e: any) => void;
+  mode: AllowlistMode;
 }
 
-export const UploadCSV = ({ onUpload }: UploadCSVProps) => {
+export const UploadCSV = ({ onUpload, mode }: UploadCSVProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -39,7 +42,12 @@ export const UploadCSV = ({ onUpload }: UploadCSVProps) => {
       <Flex align="center" justify="center" direction="column">
         <IconUpload size={32} stroke={1.5} />
         <Text mt={4} fontSize="lg">Upload CSV</Text>
-        <Text mt={2} fontSize="sm" color="gray.400">Upload your allowlist addresses</Text>
+        <Text mt={2} fontSize="sm" color="gray.400">
+          {mode === 'nft' 
+            ? "Upload your allowlist addresses"
+            : "Upload your airdrop addresses and values"
+          }
+        </Text>
       </Flex>
     </Box>
   );

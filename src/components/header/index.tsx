@@ -1,7 +1,11 @@
 import { Flex, Text, Button, Box } from "@chakra-ui/react";
-import { IconBrandGithub } from "@tabler/icons-react";
+import { IconBrandGithub, IconHelp } from "@tabler/icons-react";
+import { useState } from "react";
+import InstructionsModal from "../instructions/InstructionsModal";
 
 const Header = () => {
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
+
   return (
     <>
       <Flex
@@ -33,7 +37,21 @@ const Header = () => {
         >
           Merkle Root Generator
         </Text>
-        <Flex align="center">
+        <Flex align="center" gap={2}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsInstructionsOpen(true)}
+            fontSize="xs"
+            leftIcon={<IconHelp size={16} />}
+            _hover={{
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(123, 104, 238, 0.3)',
+            }}
+            transition="all 0.2s"
+          >
+            Help
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -44,7 +62,6 @@ const Header = () => {
               );
             }}
             fontSize="xs"
-            ml={2}
             leftIcon={<IconBrandGithub size={16} />}
             _hover={{
               transform: 'translateY(-2px)',
@@ -71,9 +88,14 @@ const Header = () => {
           textTransform="uppercase"
           fontSize="sm"
         >
-          NFT Whitelists
+          NFT Whitelists & Airdrops
         </Text>
       </Flex>
+
+      <InstructionsModal 
+        isOpen={isInstructionsOpen} 
+        onClose={() => setIsInstructionsOpen(false)} 
+      />
     </>
   );
 };

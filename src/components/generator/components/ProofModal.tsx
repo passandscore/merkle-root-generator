@@ -11,6 +11,8 @@ import {
   VStack,
 } from "@chakra-ui/react";
 
+type AllowlistMode = 'nft' | 'airdrop';
+
 interface ProofModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +21,7 @@ interface ProofModalProps {
   onGenerate: () => void;
   withQuotes?: boolean;
   onQuotesChange?: (value: boolean) => void;
+  mode: AllowlistMode;
 }
 
 export const ProofModal = ({
@@ -29,6 +32,7 @@ export const ProofModal = ({
   onGenerate,
   withQuotes = false,
   onQuotesChange,
+  mode,
 }: ProofModalProps) => {
   return (
     <Modal 
@@ -44,7 +48,10 @@ export const ProofModal = ({
         <ModalBody pb={6}>
           <VStack spacing={4} align="stretch">
             <Input
-              placeholder="Enter Ethereum address (0x...)"
+              placeholder={mode === 'nft' 
+                ? "Enter Ethereum address (0x...)"
+                : "Enter Ethereum address for airdrop proof (0x...)"
+              }
               value={proofAddress}
               onChange={(e) => onAddressChange(e.target.value)}
               size="md"

@@ -3,8 +3,8 @@ import Papa from "papaparse";
 import { MerkleTree } from "merkletreejs";
 import { ethers } from "ethers";
 import { CSVLink } from "react-csv";
-import { Container, useToast, Tabs, TabList, TabPanels, Tab, TabPanel, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton } from "@chakra-ui/react";
-import { IconCopy, IconUpload, IconSitemap, IconPlant2, IconList, IconArrowLeft } from "@tabler/icons-react";
+import { Container, useToast, Tabs, TabList, TabPanels, Tab, TabPanel, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, RadioGroup, Radio, Stack, Text as ChakraText } from "@chakra-ui/react";
+import { IconCopy, IconUpload, IconSitemap, IconPlant2, IconList, IconArrowLeft, IconCoins } from "@tabler/icons-react";
 import { Input, Button, Flex, Text, Box } from "@chakra-ui/react";
 import { useWindowSize } from "usehooks-ts";
 import { mobileBreakpoint, invalidAddressesOutputFilename } from "config";
@@ -12,12 +12,20 @@ import { ProofModal } from "./components/ProofModal";
 import { UploadCSV } from "./components/UploadCSV";
 import { ExportInvalidButton } from "./components/ExportInvalidButton";
 
+type AllowlistMode = 'nft' | 'airdrop';
+
+interface AllowlistEntry {
+  address: string;
+  value?: string; // in wei for airdrops
+}
+
 export default function Generate() {
   const [generatedMerkleRoot, setGeneratedMerkleRoot] = useState("");
   const [generatedMerkleProof, setGeneratedMerkleProof] = useState("");
   const [proofAddress, setProofAddress] = useState("");
   const [invalidAddresses, setInvalidAddresses] = useState([] as string[]);
   const [whitelistedAddresses, setWhitelistedAddresses] = useState([] as string[]);
+  const [allowlistEntries, setAllowlistEntries] = useState<AllowlistEntry[]>([]);
   const [merkleTree, setMerkleTree] = useState<MerkleTree | null>(null);
   const [selectedAction, setSelectedAction] = useState<'root' | 'proof' | null>(null);
   const [isProofCopied, setIsProofCopied] = useState(false);
@@ -27,6 +35,7 @@ export default function Generate() {
   const [withQuotes, setWithQuotes] = useState(false);
   const [numberOfDuplicates, setNumberOfDuplicates] = useState(0);
   const [initialAddresses, setInitialAddresses] = useState(0);
+  const [allowlistMode, setAllowlistMode] = useState<AllowlistMode>('nft');
 
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,40 +49,107 @@ export default function Generate() {
     filename: invalidAddressesOutputFilename,
   };
 
-  const generateMerkleTree = useCallback((addresses: string[]) => {
-    const leaves = addresses.map((v) => ethers.utils.keccak256(v));
-    const tree = new MerkleTree(leaves, ethers.utils.keccak256, {
-      sort: true,
-    });
-    return tree;
-  }, []);
+  const generateMerkleTree = useCallback((entries: AllowlistEntry[]) => {
+    if (allowlistMode === 'airdrop') {
+      // Sort entries by address (like the reference code)
+      const sortedEntries = [...entries].sort((a, b) => 
+        a.address.toLowerCase().localeCompare(b.address.toLowerCase())
+      );
+      
+      const leaves = sortedEntries.map((entry) => {
+        if (entry.value) {
+          const checksummedAddress = ethers.utils.getAddress(entry.address);
+          const packed = ethers.utils.solidityPack(['address', 'uint256'], [checksummedAddress, entry.value]);
+          return ethers.utils.keccak256(packed);
+        } else {
+          return ethers.utils.keccak256(entry.address);
+        }
+      });
+      
+      const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sortPairs: true });
+      return tree;
+    } else {
+      // For NFT whitelist, keep existing behavior
+      const leaves = entries.map((entry) => ethers.utils.keccak256(entry.address));
+      const tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true });
+      return tree;
+    }
+  }, [allowlistMode]);
 
   const generateMerkleRoot = useCallback((tree: MerkleTree) => {
     return tree.getHexRoot();
   }, []);
 
-  const generateProof = useCallback((address: string) => {
+  const generateProof = useCallback((address: string, value?: string) => {
     if (!merkleTree || !ethers.utils.isAddress(address)) return null;
-    const leaf = ethers.utils.keccak256(address.toLowerCase());
+    
+    let leaf: string;
+    if (allowlistMode === 'airdrop' && value) {
+      const checksummedAddress = ethers.utils.getAddress(address.toLowerCase());
+      const packed = ethers.utils.solidityPack(['address', 'uint256'], [checksummedAddress, value]);
+      leaf = ethers.utils.keccak256(packed);
+    } else {
+      leaf = ethers.utils.keccak256(address.toLowerCase());
+    }
+    
     return merkleTree.getHexProof(leaf);
-  }, [merkleTree]);
+  }, [merkleTree, allowlistMode]);
 
   const parsedFile = (file) => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         complete: (results) => {
           setInitialAddresses(results.data.length);
-          const addressesWithoutDuplicates = Array.from(new Set(
-            results.data
-              .flat(Infinity)
-              .map((item: unknown) => (item || "").toString().trim().toLowerCase())
-              .filter(item => item.length > 0)
-          ));
-
-          const numberOfDuplicates =   results.data.length - addressesWithoutDuplicates.length;
-          setNumberOfDuplicates(numberOfDuplicates);
           
-          resolve(addressesWithoutDuplicates);
+          if (allowlistMode === 'airdrop') {
+            // For airdrops, expect two columns: address, amount
+            const entries: AllowlistEntry[] = [];
+            const seenAddresses = new Set<string>();
+            let duplicates = 0;
+            
+            results.data.forEach((row: any[]) => {
+              const address = (row[0] || "").toString().trim();
+              const amount = (row[1] || "").toString().trim();
+              
+              if (address.length > 0) {
+                // Clean address format like reference code
+                const cleanAddress = address.split(/[;,]/)[0].toLowerCase().trim();
+                
+                if (seenAddresses.has(cleanAddress)) {
+                  duplicates++;
+                } else {
+                  seenAddresses.add(cleanAddress);
+                  
+                  // Convert ETH amount to wei like reference code
+                  let amountInWei: string;
+                  try {
+                    amountInWei = ethers.utils.parseEther(amount).toString();
+                    entries.push({ address: cleanAddress, value: amountInWei });
+                  } catch (error) {
+                    console.warn(`Invalid amount format for address ${cleanAddress}: ${amount}`);
+                    // Skip invalid amounts
+                  }
+                }
+              }
+            });
+            
+            setNumberOfDuplicates(duplicates);
+            resolve(entries);
+          } else {
+            // For NFT whitelist, expect single column: address
+            const addressesWithoutDuplicates = Array.from(new Set(
+              results.data
+                .flat(Infinity)
+                .map((item: unknown) => (item || "").toString().trim().toLowerCase())
+                .filter(item => item.length > 0)
+            ));
+
+            const numberOfDuplicates = results.data.length - addressesWithoutDuplicates.length;
+            setNumberOfDuplicates(numberOfDuplicates);
+            
+            const entries: AllowlistEntry[] = addressesWithoutDuplicates.map(addr => ({ address: addr as string }));
+            resolve(entries);
+          }
         },
         error: (error) => {
           reject(error);
@@ -82,9 +158,9 @@ export default function Generate() {
     });
   };
 
-  const createRootHashFromAddressList = async (addresses: string[]) => {
+  const createRootHashFromAddressList = async (entries: AllowlistEntry[]) => {
     try {
-      const tree = generateMerkleTree(addresses);
+      const tree = generateMerkleTree(entries);
       const root = generateMerkleRoot(tree);
       setMerkleTree(tree);
       setGeneratedMerkleRoot(root);
@@ -96,17 +172,15 @@ export default function Generate() {
   const handleAddresses = async (e: any) => {
     try {
       const file = e.target.files && e.target.files[0];
-      const addresses = (await parsedFile(file)) as string[];
-
-      // Remove duplicates
-      const addressesWithoutDuplicates = Array.from(new Set(addresses));
-      
-
+      const entries = (await parsedFile(file)) as AllowlistEntry[];
 
       // Check for invalid addresses
-      const invalidAddressesList = addressesWithoutDuplicates.filter(
-        (address) => !ethers.utils.isAddress(address)
-      );
+      const invalidAddressesList = entries.filter(
+        (entry) => !ethers.utils.isAddress(entry.address)
+      ).map(entry => entry.address);
+
+      // For airdrops, validation is already done in parsedFile
+      // No need for additional value validation since we convert ETH to wei
 
       // Set invalid addresses if any found
       if (invalidAddressesList.length > 0) {
@@ -121,9 +195,10 @@ export default function Generate() {
       }
 
       // Filter out invalid addresses
-      const validAddresses = addressesWithoutDuplicates.filter(address => ethers.utils.isAddress(address));
-      setWhitelistedAddresses(validAddresses);
-      createRootHashFromAddressList(validAddresses);
+      const validEntries = entries.filter(entry => ethers.utils.isAddress(entry.address));
+      setAllowlistEntries(validEntries);
+      setWhitelistedAddresses(validEntries.map(entry => entry.address));
+      createRootHashFromAddressList(validEntries);
       
     } catch (error) {
       console.error('File processing error:', error);
@@ -150,9 +225,11 @@ export default function Generate() {
       return;
     }
 
-    // Check if address exists in whitelist
+    // Check if address exists in allowlist
     const normalizedAddress = proofAddress.toLowerCase();
-    if (!whitelistedAddresses.includes(normalizedAddress)) {
+    const entry = allowlistEntries.find(entry => entry.address === normalizedAddress);
+    
+    if (!entry) {
       toast({
         title: "Address not found",
         description: "The provided address is not in the allowlist",
@@ -164,7 +241,7 @@ export default function Generate() {
       return;
     }
 
-    const proof = generateProof(proofAddress);
+    const proof = generateProof(proofAddress, entry.value);
     if (!proof) {
       toast({
         title: "Error generating proof",
@@ -205,6 +282,7 @@ export default function Generate() {
     setGeneratedMerkleRoot("");
     setGeneratedMerkleProof("");
     setWhitelistedAddresses([]);
+    setAllowlistEntries([]);
     setProofAddress("");
     setMerkleTree(null);
     setSelectedAction(null);
@@ -241,15 +319,39 @@ export default function Generate() {
 
     if (!merkleTree) {
       return (
-        <UploadCSV 
-          onUpload={handleAddresses}
-        />
+        <Box>
+          <Box mb={10}>
+            <ChakraText fontSize="lg" color="gray.200" mb={3}>
+              Select Allowlist Type:
+            </ChakraText>
+            <RadioGroup value={allowlistMode} onChange={(value: AllowlistMode) => setAllowlistMode(value)}>
+              <Stack direction="row" spacing={6}>
+                <Radio value="nft" colorScheme="blue">
+                  <ChakraText color="gray.300">NFT Whitelist</ChakraText>
+                </Radio>
+                <Radio value="airdrop" colorScheme="blue">
+                  <ChakraText color="gray.300">Airdrop Allowlist</ChakraText>
+                </Radio>
+              </Stack>
+            </RadioGroup>
+            <ChakraText fontSize="sm" color="gray.400" mt={2}>
+              {allowlistMode === 'nft' 
+                ? "Upload a CSV with Ethereum addresses (one per line)"
+                : "Upload a CSV with Ethereum addresses and values in wei (two columns: address, value)"
+              }
+            </ChakraText>
+          </Box>
+          <UploadCSV 
+            onUpload={handleAddresses}
+            mode={allowlistMode}
+          />
+        </Box>
       );
     }
 
     if (!selectedAction) {
       return (
-        <Box mt={8}>
+        <Box mt={20}>
           <Flex gap={6} justify="center" wrap="wrap">
             <Button
               size="lg"
@@ -300,7 +402,10 @@ export default function Generate() {
               variant="outline"
               colorScheme={isAddressesCopied ? "green" : "blue"}
               onClick={() => {
-                navigator.clipboard.writeText(JSON.stringify(whitelistedAddresses));
+                const dataToCopy = allowlistMode === 'airdrop' 
+                  ? allowlistEntries.map(entry => ({ address: entry.address, value: entry.value }))
+                  : whitelistedAddresses;
+                navigator.clipboard.writeText(JSON.stringify(dataToCopy));
                 setIsAddressesCopied(true);
                 toast({
                   title: "Addresses copied!",
@@ -321,8 +426,8 @@ export default function Generate() {
               gap={2}
               _hover={{ bg: "blue.900" }}
             >
-              <IconList size={32} stroke={1.5} />
-              <Text>{isAddressesCopied ? "Addresses Copied!" : "Copy Addresses"}</Text>
+              {allowlistMode === 'airdrop' ? <IconCoins size={32} stroke={1.5} /> : <IconList size={32} stroke={1.5} />}
+              <Text>{isAddressesCopied ? "Data Copied!" : allowlistMode === 'airdrop' ? "Copy Data" : "Copy Addresses"}</Text>
             </Button>
             {invalidAddresses.length > 0 && (
               <ExportInvalidButton 
@@ -349,13 +454,16 @@ export default function Generate() {
           >
             <Flex direction="column">
               <Text color="gray.400">
-                {`${initialAddresses} addresses loaded`}
+                {`${initialAddresses} entries loaded`}
               </Text>
               <Text color="gray.400">
                 {`${numberOfDuplicates} duplicates found`}
               </Text>
               <Text color="gray.400">
-                {`${initialAddresses - numberOfDuplicates} unique addresses`}
+                {`${initialAddresses - numberOfDuplicates} unique entries`}
+              </Text>
+              <Text color="gray.400">
+                {`Mode: ${allowlistMode === 'nft' ? 'NFT Whitelist' : 'Airdrop Allowlist'}`}
               </Text>
             </Flex>
             <Button
@@ -381,6 +489,7 @@ export default function Generate() {
             onGenerate={handleProofGeneration}
             withQuotes={withQuotes}
             onQuotesChange={setWithQuotes}
+            mode={allowlistMode}
           />
         </Box>
       );
